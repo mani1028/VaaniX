@@ -1,0 +1,23 @@
+sample_rate_hz: 16000
+max_clips: 20
+manifest: data/manifests/eval.jsonl
+report: experiments/asr/baseline_report.md
+detection_report: experiments/detection/status.md
+models:
+  - id: telugu_asr_micro
+    backend: faster_whisper
+    model_size: models/telugu-asr-micro
+  - id: telugu_asr_small
+    backend: faster_whisper
+    model_size: models/telugu-asr
+  - id: indicconformer_te_ctc
+    backend: indicconformer
+    decoding: ctc
+    checkpoint: ai4bharat/indicconformer_stt_te_hybrid_ctc_rnnt_large
+  - id: indicconformer_te_rnnt
+    backend: indicconformer
+    decoding: rnnt
+    checkpoint: ai4bharat/indicconformer_stt_te_hybrid_ctc_rnnt_large
+  - id: faster_whisper_small
+    backend: faster_whisper
+    model_size: small

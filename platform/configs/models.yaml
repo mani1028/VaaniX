@@ -1,0 +1,79 @@
+# Open-source model registry for Bhasha Platform (Sarvam-style feature map).
+# All inference paths are local. Do not put API keys here.
+
+product_name: Bhasha Platform
+scope: indic_speech_and_text
+
+asr:
+  default: telugu_micro
+  backends:
+    telugu_micro:
+      id: models/telugu-asr-micro
+      languages: [te]
+      size_bytes: 44255137
+      license: Apache-2.0
+      source: vasista22/whisper-telugu-tiny (CTranslate2 int8)
+      status: ready_offline
+    telugu_small:
+      id: models/telugu-asr
+      languages: [te]
+      size_bytes: 253164606
+      license: Apache-2.0
+      source: vasista22/whisper-telugu-small via ukta-app/whisper-telugu-ct2
+      status: ready_offline_optional
+    indicconformer_te:
+      id: ai4bharat/indicconformer_stt_te_hybrid_ctc_rnnt_large
+      languages: [te]
+      params: 120M_encoder
+      license: MIT
+      status: needs_nemo
+    indicconformer_multi:
+      id: ai4bharat/indic-conformer-600m-multilingual
+      languages: [as, bn, brx, doi, gu, hi, kn, kok, ks, mai, ml, mni, mr, ne, or, pa, sa, sat, sd, ta, te, ur]
+      params: 600M
+      license: MIT
+      status: needs_nemo
+
+tts:
+  default: telugu_micro
+  backends:
+    telugu_micro:
+      id: models/telugu-tts-micro
+      languages: [te]
+      size_bytes: 26269200
+      license: CC-BY-NC-4.0
+      source: facebook/mms-tts-tel int8-on-disk
+      status: ready_offline_noncommercial
+    indicf5:
+      id: ai4bharat/IndicF5
+      languages: [as, bn, gu, hi, kn, ml, mr, or, pa, ta, te]
+      license: MIT
+      status: needs_hf_gate_and_consent_reference
+
+translate:
+  default: indictrans2_dist
+  backends:
+    indictrans2_en_indic_dist:
+      id: ai4bharat/indictrans2-en-indic-dist-200M
+      directions: [en_indic]
+      license: MIT
+      status: lazy_download
+    indictrans2_indic_en_dist:
+      id: ai4bharat/indictrans2-indic-en-dist-200M
+      directions: [indic_en]
+      license: MIT
+      status: lazy_download
+    indictrans2_indic_indic_dist:
+      id: ai4bharat/indictrans2-indic-indic-dist-320M
+      directions: [indic_indic]
+      license: MIT
+      status: lazy_download
+
+cascade:
+  speech_to_speech:
+    steps: [asr, translate, tts]
+    status: implemented_when_parts_ready
+
+excluded:
+  - sarvam_weights
+  - closed_api_dependencies_for_inference

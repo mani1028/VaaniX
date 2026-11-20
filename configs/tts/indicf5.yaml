@@ -1,0 +1,7 @@
+model_id: ai4bharat/IndicF5
+sample_rate_hz: 24000
+parameters_approx: 400000000
+license: MIT
+requires_reference_audio: true
+consent_required: true
+phase: inference_baseline

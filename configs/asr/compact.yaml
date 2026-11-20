@@ -1,0 +1,13 @@
+student_name: TeluguTinyASR
+encoder: conformer_ctc
+target_parameters: 15000000
+target_weight_bytes_int8_min: 10000000
+target_weight_bytes_int8_max: 50000000
+decoder: ctc_greedy
+tokenizer: telugu_chars_plus_latin
+distilled_from: ai4bharat/indicconformer_stt_te_hybrid_ctc_rnnt_large
+export: onnx_int8
+phase: not_executed_in_phase_1
+release_gate:
+  max_clean_wer_gap_vs_teacher: 0.02
+  min_size_reduction_factor: 3

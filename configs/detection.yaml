@@ -1,0 +1,8 @@
+sample_rate_hz: 16000
+min_speech_seconds: 0.4
+te_confidence_min: 0.6
+other_confidence_min: 0.5
+backend: faster_whisper_multilingual
+model_path: models/whisper-multilingual-tiny
+code_mix_audio: unsupported
+notes: Utterance LID only. te-en is not emitted until a segment model exists. Telugu script is not a feature.

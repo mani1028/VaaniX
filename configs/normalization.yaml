@@ -1,0 +1,3 @@
+digit_policy: spoken
+lowercase_latin: true
+strip_punctuation_in_norm: true

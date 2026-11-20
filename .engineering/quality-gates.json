@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "profile": "service",
+  "owner": "Telugu AI Speech Lab maintainer",
+  "profile_rationale": "Phase 1 is a local Python service and library. It has no database and no multi-tenant store. Authorization is a bearer-token check on the inference routes.",
+  "checks": [
+    {
+      "id": "lint",
+      "category": "lint",
+      "status": "configured",
+      "command": [".venv/bin/python", "-m", "compileall", "-q", "src", "tests", "scripts"],
+      "cwd": ".",
+      "timeout_seconds": 120,
+      "stages": ["change", "release"],
+      "purpose": "Byte-compile the package, tests, and scripts so syntax errors fail the gate."
+    },
+    {
+      "id": "static_analysis",
+      "category": "static_analysis",
+      "status": "configured",
+      "command": [".venv/bin/python", "scripts/check_static.py"],
+      "cwd": ".",
+      "timeout_seconds": 120,
+      "stages": ["change", "release"],
+      "purpose": "Parse project Python and fail if eval or exec is introduced."
+    },
+    {
+      "id": "tests",
+      "category": "tests",
+      "status": "configured",
+      "command": [".venv/bin/python", "-m", "pytest"],
+      "cwd": ".",
+      "timeout_seconds": 180,
+      "stages": ["change", "release"],
+      "purpose": "Run unit tests for normalization, splits, error rates, and the API."
+    },
+    {
+      "id": "secret_scan",
+      "category": "secret_scan",
+      "status": "configured",
+      "command": [".venv/bin/python", "scripts/scan_secrets.py"],
+      "cwd": ".",
+      "timeout_seconds": 120,
+      "stages": ["change", "release"],
+      "purpose": "Fail when source assigns a long literal to a secret-like name."
+    },
+    {
+      "id": "dependency_scan",
+      "category": "dependency_scan",
+      "status": "configured",
+      "command": [".venv/bin/python", "scripts/check_dependencies.py"],
+      "cwd": ".",
+      "timeout_seconds": 60,
+      "stages": ["change", "release"],
+      "purpose": "Reject URL dependencies and requirements that lack an upper bound."
+    },
+    {
+      "id": "security_scan",
+      "category": "security_scan",
+      "status": "configured",
+      "command": [".venv/bin/python", "-m", "pytest", "tests/test_api.py", "-q"],
+      "cwd": ".",
+      "timeout_seconds": 180,
+      "stages": ["change", "release"],
+      "purpose": "Assert unauthenticated inference is denied when auth is required and uploads are constrained."
+    },
+    {
+      "id": "build",
+      "category": "build",
+      "status": "configured",
+      "command": [".venv/bin/python", "-c", "import telugu_speech.api.main"],
+      "cwd": ".",
+      "timeout_seconds": 60,
+      "stages": ["change", "release"],
+      "purpose": "Import the package from the src layout without a network install."
+    },
+    {
+      "id": "authorization",
+      "category": "authorization",
+      "status": "configured",
+      "command": [".venv/bin/python", "-m", "pytest", "tests/test_api.py::test_health_is_public_and_protected_routes_deny_without_keys", "tests/test_api.py::test_invalid_key_is_rejected", "-q"],
+      "cwd": ".",
+      "timeout_seconds": 180,
+      "stages": ["change", "release"],
+      "purpose": "Fail if missing or wrong credentials can transcribe audio."
+    },
+    {
+      "id": "contracts",
+      "category": "contracts",
+      "status": "configured",
+      "command": [".venv/bin/python", "-m", "pytest", "tests/test_api.py::test_local_open_transcribes_with_injected_backend", "tests/test_api.py::test_tts_rejects_non_telugu_and_unknown_voices", "tests/test_api.py::test_generated_audio_requires_the_same_key", "-q"],
+      "cwd": ".",
+      "timeout_seconds": 180,
+      "stages": ["change", "release"],
+      "purpose": "Check health, model list, ASR, and TTS response behavior against the route contracts."
+    },
+    {
+      "id": "database",
+      "category": "database",
+      "status": "not_applicable",
+      "command": [],
+      "cwd": ".",
+      "timeout_seconds": 60,
+      "stages": ["change", "release"],
+      "purpose": "",
+      "reason": "Phase 1 stores manifests as JSONL files on disk and has no database schema or migration."
+    },
+    {
+      "id": "workflow",
+      "category": "workflow",
+      "status": "configured",
+      "command": [".venv/bin/python", "-m", "pytest", "tests/test_audio.py::test_speaker_overlap_is_rejected", "tests/test_tts.py::test_finetune_config_is_valid_and_does_not_train", "-q"],
+      "cwd": ".",
+      "timeout_seconds": 180,
+      "stages": ["change", "release"],
+      "purpose": "Reject overlapping speakers and refuse to start training in this phase."
+    }
+  ],
+  "review_file": ".engineering/review.json"
+}

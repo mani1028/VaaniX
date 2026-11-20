@@ -1,0 +1,11 @@
+student_name: TeluguTinyTTS
+acoustic: fastpitch_or_matcha
+vocoder: vocos_or_hifigan
+package_bytes_min: 50000000
+package_bytes_max: 150000000
+speakers: single
+styles_after_single_speaker:
+  - neutral
+  - conversational
+  - news
+phase: not_executed_in_phase_1

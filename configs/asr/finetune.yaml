@@ -1,0 +1,24 @@
+teacher_config: configs/asr/indicconformer.yaml
+optimizer: adamw
+learning_rate: 0.0001
+precision: bf16
+sample_rate_hz: 16000
+features: log_mel_80
+decoder: ctc
+early_stopping_metric: validation_wer
+speaker_independent: true
+augment_train_only:
+  - noise
+  - reverb
+  - speed
+  - telephone_8khz
+datasets:
+  - kathbath_te
+  - shrutilipi_te
+  - common_voice_te
+held_out:
+  - fleurs_te
+  - mucs_te
+  - indictts_te_test
+held_out_manifest: data/manifests/eval.jsonl
+phase: not_executed_in_phase_1

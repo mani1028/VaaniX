@@ -1,0 +1,7 @@
+acoustic: fastpitch
+vocoder: hifi_gan
+speakers: single
+styles: []
+sample_rate_hz: 22050
+consent_required: true
+phase: not_executed_in_phase_1

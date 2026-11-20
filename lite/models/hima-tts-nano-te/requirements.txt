@@ -1,0 +1,6 @@
+onnxruntime
+numpy
+safetensors
+sentencepiece
+soundfile
+pyyaml

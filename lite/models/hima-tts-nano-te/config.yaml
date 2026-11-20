@@ -1,0 +1,39 @@
+language: te
+model:
+  vocab_size: 16000
+  text_dim: 256
+  d_model: 576
+  n_heads: 9
+  ff: 2304
+  n_begin: 2
+  n_middle: 8
+  n_end: 2
+  n_loops: 1
+  n_streams: 1
+  latent_dim: 32
+  flow_dim: 512
+  flow_depth: 6
+  flow_batch_multiplier: 4
+  eos_loss_weight: 0.3
+  text_dropout: 0.1
+  voice_dropout: 0.1
+  stats_ema_decay: 0.999
+  rope_theta: 10000.0
+  spoil_max: 0.3
+  spoil_ramp: 10000
+  spoil_min_win: 12
+  spoil_max_win: 50
+  hist_noise_max: 0.0
+  hist_noise_prob: 1.0
+  ref_frames: 62
+  ref_dropout: 0.2
+  null_both: 0.1
+  spk_dim: 192
+  max_len: 1024
+sampler:
+  guidance: 1.25
+  flow_steps: 4
+  temperature: 0.3
+  max_frames: 375
+  frame_rate_hz: 12.5
+  sample_rate: 24000

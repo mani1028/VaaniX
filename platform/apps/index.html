@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bhasha Platform</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --ink: #e8eef6;
+      --muted: #8b9bb0;
+      --accent: #3d9a6a;
+      --line: #2a3648;
+      --warn: #c4a35a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1e3a2f 0%, transparent 50%),
+                  radial-gradient(900px 500px at 100% 0%, #1a2740 0%, transparent 45%),
+                  var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    header {
+      padding: 2.5rem 1.5rem 1rem;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-weight: 600;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      margin: 0 0 0.4rem;
+      letter-spacing: -0.02em;
+    }
+    .tag {
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 36rem;
+      line-height: 1.45;
+    }
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+      display: grid;
+      gap: 1rem;
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+    }
+    h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.35rem; }
+    input, select, textarea, button {
+      font: inherit;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #121820;
+      color: var(--ink);
+      padding: 0.55rem 0.7rem;
+      width: 100%;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    button {
+      background: var(--accent);
+      border-color: transparent;
+      color: #04140c;
+      font-weight: 600;
+      cursor: pointer;
+      width: auto;
+      padding: 0.55rem 1.1rem;
+      margin-top: 0.6rem;
+    }
+    button:disabled { opacity: 0.5; cursor: wait; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin: 0.75rem 0 0;
+      max-height: 220px;
+      overflow: auto;
+    }
+    .note { font-size: 0.8rem; color: var(--warn); margin-top: 0.5rem; }
+    audio { width: 100%; margin-top: 0.6rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Bhasha Platform</h1>
+    <p class="tag">Open-weight Indic speech stack — ASR, TTS, translation, speech-to-speech. Local inference. Not affiliated with Sarvam.</p>
+  </header>
+  <main>
+    <section>
+      <h2>Connection</h2>
+      <label for="base">API base</label>
+      <input id="base" value="http://127.0.0.1:8000" />
+      <label for="key" style="margin-top:0.6rem">API key (if enabled)</label>
+      <input id="key" type="password" placeholder="optional" />
+      <button type="button" id="btnHealth">Check health + catalog</button>
+      <pre id="outHealth"></pre>
+    </section>
+
+    <section>
+      <h2>ASR</h2>
+      <label for="asrFile">WAV file</label>
+      <input id="asrFile" type="file" accept=".wav,audio/wav" />
+      <div class="row" style="margin-top:0.6rem">
+        <div>
+          <label for="asrLang">Language</label>
+          <select id="asrLang"><option value="te">te</option><option value="hi">hi</option><option value="en">en</option></select>
+        </div>
+      </div>
+      <button type="button" id="btnAsr">Transcribe</button>
+      <pre id="outAsr"></pre>
+    </section>
+
+    <section>
+      <h2>TTS</h2>
+      <label for="ttsText">Text</label>
+      <textarea id="ttsText">నమస్కారం</textarea>
+      <button type="button" id="btnTts">Synthesize</button>
+      <audio id="ttsAudio" controls></audio>
+      <pre id="outTts"></pre>
+    </section>
+
+    <section>
+      <h2>Translate</h2>
+      <label for="trText">Text</label>
+      <textarea id="trText">నమస్కారం</textarea>
+      <div class="row">
+        <div>
+          <label for="trSrc">Source</label>
+          <select id="trSrc"><option value="te">te</option><option value="hi">hi</option><option value="en">en</option></select>
+        </div>
+        <div>
+          <label for="trTgt">Target</label>
+          <select id="trTgt"><option value="en">en</option><option value="hi">hi</option><option value="te">te</option></select>
+        </div>
+      </div>
+      <button type="button" id="btnTr">Translate</button>
+      <p class="note">First call may download IndicTrans2 weights.</p>
+      <pre id="outTr"></pre>
+    </section>
+
+    <section>
+      <h2>Speech → speech</h2>
+      <label for="s2sFile">WAV</label>
+      <input id="s2sFile" type="file" accept=".wav,audio/wav" />
+      <div class="row" style="margin-top:0.6rem">
+        <div>
+          <label for="s2sSrc">Source</label>
+          <select id="s2sSrc"><option value="te">te</option></select>
+        </div>
+        <div>
+          <label for="s2sTgt">Target</label>
+          <select id="s2sTgt"><option value="en">en</option><option value="hi">hi</option><option value="te">te</option></select>
+        </div>
+      </div>
+      <button type="button" id="btnS2s">Run cascade</button>
+      <audio id="s2sAudio" controls></audio>
+      <pre id="outS2s"></pre>
+    </section>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    function headers() {
+      const h = {};
+      const k = $("key").value.trim();
+      if (k) h["Authorization"] = "Bearer " + k;
+      return h;
+    }
+    function base() { return $("base").value.replace(/\/$/, ""); }
+
+    $("btnHealth").onclick = async () => {
+      $("outHealth").textContent = "…";
+      try {
+        const [h, c] = await Promise.all([
+          fetch(base() + "/platform/v1/health").then((r) => r.json()),
+          fetch(base() + "/platform/v1/catalog").then((r) => r.json()),
+        ]);
+        $("outHealth").textContent = JSON.stringify({ health: h, catalog: c }, null, 2);
+      } catch (e) {
+        $("outHealth").textContent = String(e);
+      }
+    };
+
+    $("btnAsr").onclick = async () => {
+      const f = $("asrFile").files[0];
+      if (!f) { $("outAsr").textContent = "Choose a WAV file."; return; }
+      $("btnAsr").disabled = true;
+      $("outAsr").textContent = "…";
+      try {
+        const fd = new FormData();
+        fd.append("audio", f);
+        const r = await fetch(base() + "/platform/v1/asr/transcribe?language=" + $("asrLang").value, {
+          method: "POST", headers: headers(), body: fd,
+        });
+        $("outAsr").textContent = JSON.stringify(await r.json(), null, 2);
+      } catch (e) {
+        $("outAsr").textContent = String(e);
+      } finally {
+        $("btnAsr").disabled = false;
+      }
+    };
+
+    $("btnTts").onclick = async () => {
+      $("btnTts").disabled = true;
+      $("outTts").textContent = "…";
+      try {
+        const r = await fetch(base() + "/platform/v1/tts/synthesize", {
+          method: "POST",
+          headers: { ...headers(), "Content-Type": "application/json" },
+          body: JSON.stringify({ text: $("ttsText").value, language: "te" }),
+        });
+        const j = await r.json();
+        $("outTts").textContent = JSON.stringify(j, null, 2);
+        if (j.audio_path) $("ttsAudio").src = base() + "/platform/v1/audio/" + encodeURIComponent(j.audio_path.split("/").pop());
+      } catch (e) {
+        $("outTts").textContent = String(e);
+      } finally {
+        $("btnTts").disabled = false;
+      }
+    };
+
+    $("btnTr").onclick = async () => {
+      $("btnTr").disabled = true;
+      $("outTr").textContent = "…";
+      try {
+        const r = await fetch(base() + "/platform/v1/translate", {
+          method: "POST",
+          headers: { ...headers(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: $("trText").value,
+            source: $("trSrc").value,
+            target: $("trTgt").value,
+          }),
+        });
+        $("outTr").textContent = JSON.stringify(await r.json(), null, 2);
+      } catch (e) {
+        $("outTr").textContent = String(e);
+      } finally {
+        $("btnTr").disabled = false;
+      }
+    };
+
+    $("btnS2s").onclick = async () => {
+      const f = $("s2sFile").files[0];
+      if (!f) { $("outS2s").textContent = "Choose a WAV file."; return; }
+      $("btnS2s").disabled = true;
+      $("outS2s").textContent = "…";
+      try {
+        const fd = new FormData();
+        fd.append("audio", f);
+        const q = new URLSearchParams({
+          source_language: $("s2sSrc").value,
+          target_language: $("s2sTgt").value,
+        });
+        const r = await fetch(base() + "/platform/v1/speech-to-speech?" + q, {
+          method: "POST", headers: headers(), body: fd,
+        });
+        const j = await r.json();
+        $("outS2s").textContent = JSON.stringify(j, null, 2);
+        if (j.audio_path) $("s2sAudio").src = base() + "/platform/v1/audio/" + encodeURIComponent(j.audio_path.split("/").pop());
+      } catch (e) {
+        $("outS2s").textContent = String(e);
+      } finally {
+        $("btnS2s").disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

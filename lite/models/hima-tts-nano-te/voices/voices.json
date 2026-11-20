@@ -1,0 +1,29 @@
+{
+ "language": "te",
+ "voices": [
+  {
+   "name": "Lakshmi",
+   "gender": "female"
+  },
+  {
+   "name": "Sravani",
+   "gender": "female"
+  },
+  {
+   "name": "Bhavana",
+   "gender": "female"
+  },
+  {
+   "name": "Srinivas",
+   "gender": "male"
+  },
+  {
+   "name": "Karthik",
+   "gender": "male"
+  },
+  {
+   "name": "Pranay",
+   "gender": "male"
+  }
+ ]
+}

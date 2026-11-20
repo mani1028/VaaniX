@@ -1,0 +1,12 @@
+model_id: ai4bharat/indicconformer_stt_te_hybrid_ctc_rnnt_large
+framework: ai4bharat-nemo
+nemo_ref: nemo-v2
+sample_rate_hz: 16000
+channels: 1
+features: log_mel_80
+decoding:
+  - ctc
+  - rnnt
+license: MIT
+gated_access: true
+notes: Encoder is the published 120M Conformer (17 blocks, width 512). This is not the 600M multilingual checkpoint.
