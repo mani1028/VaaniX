@@ -37,8 +37,14 @@ class Settings:
         )
 
 
-def authorize(settings: Settings, authorization_header: str | None) -> None:
+_LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
+
+
+def authorize(settings: Settings, authorization_header: str | None, client_host: str | None = None) -> None:
     if settings.auth_mode == "local_open":
+        return
+    # The page on this machine calls Play with no key. A remote caller still needs one.
+    if client_host in _LOOPBACK:
         return
     if not settings.api_keys:
         raise PermissionError("api_keys_not_configured")
@@ -47,3 +53,35 @@ def authorize(settings: Settings, authorization_header: str | None) -> None:
     token = authorization_header.removeprefix("Bearer ").strip()
     if token not in settings.api_keys:
         raise PermissionError("invalid_credentials")
+
+
+def authorize_any(
+    settings: Settings,
+    authorization_header: str | None,
+    x_api_key: str | None = None,
+    client_host: str | None = None,
+) -> str:
+    """Accept a key as ``Authorization: Bearer <key>`` or ``X-API-Key: <key>``.
+
+    Same keys, same rules as :func:`authorize` — the OpenAI-compatible
+    routes accept both spellings because OpenAI SDKs send Bearer while
+    many local clients send X-API-Key. Returns the key that was accepted
+    (used as the rate-limit identity); ``"local_open"`` when auth is open.
+    Raises the same PermissionError codes as :func:`authorize`.
+    """
+    if settings.auth_mode == "local_open":
+        return "local_open"
+    if client_host in _LOOPBACK:
+        return "loopback"
+    if not settings.api_keys:
+        raise PermissionError("api_keys_not_configured")
+    token: str | None = None
+    if authorization_header and authorization_header.startswith("Bearer "):
+        token = authorization_header.removeprefix("Bearer ").strip()
+    elif x_api_key and x_api_key.strip():
+        token = x_api_key.strip()
+    if not token:
+        raise PermissionError("missing_credentials")
+    if token not in settings.api_keys:
+        raise PermissionError("invalid_credentials")
+    return token

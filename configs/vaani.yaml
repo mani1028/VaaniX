@@ -1,0 +1,70 @@
+# Vaani X — the ONE config file a developer edits (v2.1).
+#
+# Precedence (highest wins):  environment variable (VAANI_*)  >  this file  >  built-in defaults.
+# Every value is validated at startup and on POST /v1/reload. A bad value
+# FAILS STARTUP / FAILS THE RELOAD with an error naming the key and the
+# value — it is never silently replaced by a default. See docs/CONFIGURATION.md.
+#
+# There are NO secrets in this file. API keys stay in the environment
+# (TELUGU_API_KEYS). GET /v1/config never returns a secret.
+#
+# STATUS NOTE (2026-11-21): the shipped voice manifests in configs/voices/
+# still carry a zero sha256, so the registry rejects both packs until Mani
+# runs: shasum -a 256 lite/models/hima-tts-nano-te/onnx/voices/step_int8.onnx
+# and pastes the hash into both yamls. The legacy fallback keeps Srinivas
+# and Sravani working meanwhile. That step is NOT fixed by this file.
+
+server:
+  host: "127.0.0.1"          # VAANI_HOST (TELUGU_HOST also honoured)
+  port: 8000                 # VAANI_PORT (TELUGU_PORT also honoured), 1-65535
+  rate_limit_per_minute: 2000  # VAANI_RATE_LIMIT_PER_MINUTE, per API key, /v1/*
+  cors_origins: []           # VAANI_CORS_ORIGINS, comma-separated; "*" is ignored
+  limit_concurrency: 256     # VAANI_LIMIT_CONCURRENCY, HTTP calls in flight. Extra calls wait; they do not load engines.
+
+asr:
+  # Ordered fallback chain. The first entry that loads wins; a missing or
+  # unhealthy entry is skipped and logged, never silently. Per-request
+  # `model` selects ONE entry by name — if that entry is unhealthy the
+  # call fails with 503 naming it; it is NOT silently swapped.
+  # Known entries (see docs/CONFIGURATION.md for what is actually installed):
+  #   telugu-asr-micro   faster-whisper tiny INT8, models/telugu-asr-micro (SHIPPED)
+  #   telugu-asr         faster-whisper small INT8, models/telugu-asr (measured, if present)
+  #   vasista22-small    faster-whisper fine-tune, models/vasista22-whisper-telugu-small (NOT installed)
+  #   indicconformer-600m  NeMo IndicConformer, gated HF checkpoint (NOT installed)
+  chain: [telugu-asr-micro]
+  model: "models/telugu-asr-micro"   # VAANI_ASR_MODEL (TELUGU_WHISPER_MODEL also honoured)
+  backend: faster-whisper            # VAANI_ASR_BACKEND: faster-whisper | indicconformer
+  decoding: ctc                      # VAANI_ASR_DECODING: ctc | rnnt (indicconformer only)
+
+tts:
+  # Ordered fallback chain of ENGINES (not voices). A voice pack names its
+  # own engine in its manifest; the chain is the order engines are tried
+  # when a voice does not name one, and the order listed in /v1/models.
+  #   hima-nano  (SHIPPED — the installed Hima ONNX int8 engine)
+  #   piper      (NOT installed — see docs/CONFIGURATION.md)
+  #   onnx-vits  (NOT installed)
+  chain: [hima-nano]
+  default_voice: telugu_srinivas    # VAANI_DEFAULT_VOICE
+  default_engine: hima-nano         # VAANI_DEFAULT_ENGINE
+
+limits:
+  tts_slots: 2        # VAANI_TTS_SLOTS, 1-4. Two copies measured about 640-720 MB.
+  tts_queue: 128      # VAANI_TTS_QUEUE. Waiters past the 2 slots. A full queue returns 503.
+  asr_slots: 1        # VAANI_ASR_SLOTS. One shared recognizer, loaded only while a transcript runs.
+  cpu_threads: 2      # VAANI_CPU_THREADS (TELUGU_CPU_THREADS also honoured), 1-4.
+  max_text_chars: 2000   # VAANI_MAX_TEXT_CHARS, 1-20000. Core TTS cap (OpenAI /v1 input cap is 4096, separate).
+  max_chunk_chars: 100   # VAANI_MAX_CHUNK_CHARS, 100-2000. Shorter pieces so a line is not cut off mid-sentence.
+  max_upload_mb: 25      # VAANI_MAX_UPLOAD_MB, 1-50 MB (legacy /api/v1/* upload cap; TELUGU_MAX_UPLOAD_BYTES in bytes also honoured).
+  max_audio_mb: 25       # VAANI_MAX_AUDIO_MB, 1-100 (OpenAI /v1 upload cap, also 25 MB).
+
+cache:
+  dir: "~/.cache/vaani"       # VAANI_CACHE_DIR. Model-download cache (entrypoint/fetch scripts).
+  audio_cache_entries: 32     # VAANI_AUDIO_CACHE_ENTRIES. Kept small so the cache cannot eat the 700 MB load budget.
+  audio_cache_max_mb: 32      # VAANI_AUDIO_CACHE_MAX_MB. Repeat calls return the same bytes; the cap stays small.
+
+voices:
+  dirs: []                    # VAANI_VOICES_DIR, extra voice-pack dirs (colon-separated in env).
+  idle_secs: 1800             # VAANI_VOICE_IDLE_SECS, 0-86400 (0 = never unload idle voices).
+
+offline: false                # VAANI_OFFLINE. true = never attempt a model download/fetch.
+log_level: INFO               # VAANI_LOG_LEVEL: DEBUG | INFO | WARNING | ERROR.

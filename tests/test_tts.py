@@ -27,9 +27,9 @@ def test_tts_config_and_vocoder() -> None:
 
 def test_speech_slots_default_and_cap(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("TELUGU_SPEECH_SLOTS", raising=False)
-    assert speech_slots() == 8
+    assert speech_slots() == 2
     monkeypatch.setenv("TELUGU_SPEECH_SLOTS", "32")
-    assert speech_slots() == 16
+    assert speech_slots() == 4
     monkeypatch.setenv("TELUGU_SPEECH_SLOTS", "0")
     assert speech_slots() == 1
 

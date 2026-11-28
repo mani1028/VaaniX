@@ -1,0 +1,27 @@
+# Vaani X voice manifest — Srinivas (male, Telugu)
+# SOURCE MANIFEST. Deploy by copying to voices/telugu_srinivas/manifest.yaml
+# (see configs/voices/README.md). Do NOT edit the registry or core to add a voice.
+#
+# VERIFIED 2026-11-21 from the Mac (tts/voices.py, lite pack README):
+#   engine hima-nano = ENGINE_ID hima-onnx-int8, Prahaladha hima-tts-nano-te,
+#   62M params, ONNX int8, 24 kHz, speaker "Srinivas", seed 0.
+#   model file: onnx/voices/step_int8.onnx ; config: voices/voices.json
+#   licence: other (see the lite pack README)
+# STATUS: sha256 FILLED 2026-11-21 from Mani's measured shasum on the Mac:
+#   shasum -a 256 lite/models/hima-tts-nano-te/onnx/voices/step_int8.onnx
+#   -> a2d0dbbac3cd39f86d7b3125c405418a02d0cf1132b9e3cf64546ca4f3487f22
+#   The registry can now verify this pack. Deploy by copying this file to
+#   voices/telugu_srinivas/manifest.yaml (see configs/voices/README.md).
+id: telugu_srinivas
+name: Srinivas
+gender: male
+language: te
+engine: hima-nano
+model_path: ../../lite/models/hima-tts-nano-te/onnx/voices/step_int8.onnx
+config_path: ../../lite/models/hima-tts-nano-te/voices/voices.json
+sample_rate: 24000
+licence: other
+licence_url: https://huggingface.co/Prahaladha/hima-tts-nano-te
+sha256: "a2d0dbbac3cd39f86d7b3125c405418a02d0cf1132b9e3cf64546ca4f3487f22"
+version: "1.0.0"
+tags: [male, conversational, default]

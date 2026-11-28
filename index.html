@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Telugu Speech Engine</title>
+  <title>Vaani X — Telugu Voice API</title>
   <style>
     :root {
       color-scheme: light;
@@ -149,7 +149,7 @@
 </head>
 <body>
   <header>
-    <a class="mark" href="#top">Telugu Speech</a>
+    <a class="mark" href="#top">Vaani X</a>
     <nav aria-label="Page">
       <a href="#voices">Try</a>
       <a href="#project">Project</a>
@@ -158,9 +158,9 @@
     </nav>
   </header>
   <section class="hero" id="top">
-    <p class="eyebrow">Self-hosted Telugu speech</p>
-    <h1>Telugu Speech Engine</h1>
-    <p class="lede">One API for your services. It speaks Telugu and transcribes WAV files on your own machine. Read the project page for what it includes, how much memory it uses, and how to call it.</p>
+    <p class="eyebrow">Vaani X · Self-hosted Telugu speech · OpenAI-compatible</p>
+    <h1>Telugu voice API in 60 MB, runs on a $5-class VPS</h1>
+    <p class="lede">One API for your services. It speaks Telugu and transcribes WAV files on your own machine — and any OpenAI SDK works against it with only a <code>base_url</code> change. 60 MB is the Piper-class voice size, not a measured Docker size; the shipped Hima pack is about 150 MB on disk. Honest accuracy: WER 0.2899 / CER 0.0811 on 10 clean clips — about 71% of words right, not 100%. Read the project page for what it includes, how much memory it uses, and how to call it.</p>
     <div class="actions">
       <a class="pill dark" href="#voices">Try it</a>
       <a class="pill light" href="#project">Project</a>
@@ -252,7 +252,7 @@
       </article>
       <article>
         <h3>What it does not do</h3>
-        <p>It does not translate. It does not speak other languages. It is not a measured match for Sarvam. Voice naturalness against other services was not scored.</p>
+        <p>It does not translate. It does not speak other languages. It is not a measured match for Sarvam, and it is not 100% accurate — WER 0.2899 / CER 0.0811 on 10 clean clips (about 71% of words right). Voice naturalness against other services was not scored.</p>
       </article>
       <article>
         <h3>Where the code lives</h3>
@@ -314,7 +314,7 @@ print(engine.transcribe(Path("clip.wav")))</pre>
     </div>
   </main>
   <footer>
-    <span>Telugu Speech Engine. MIT license. Not a Sarvam product.</span>
+    <span>Vaani X 0.2.0. MIT license. Not a Sarvam product. OpenAI-compatible: change only base_url.</span>
     <span>Voice naturalness was not measured against another service.</span>
   </footer>
   <script>

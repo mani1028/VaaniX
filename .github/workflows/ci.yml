@@ -1,0 +1,57 @@
+# Vaani X CI — pytest + bench gate.
+#
+# STATUS: this workflow is a file in the repo, NOT live CI. CI exists only
+# once this file is committed AND the workflow is enabled in the GitHub
+# repository settings. Do not claim CI is live, and do not quote a CI
+# result, until then. Until that day, run the same commands by hand and
+# paste the results into the PR (see CONTRIBUTING.md).
+#
+# The bench-gate job runs only when scripts/check_bench_gate.py exists
+# (it does not exist yet — see docs/benchmark_results.md). Until then
+# the job prints a reminder and passes; the gate is enforced by hand.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: pytest (no weights needed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[host,dev]"
+      - name: Tests
+        run: python -m pytest -q
+
+  bench-gate:
+    name: Benchmark gate (WER regression > 2 pts fails)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[host,dev,bench]"
+      - name: Gate (only when the gate script exists)
+        run: |
+          if [ -f scripts/check_bench_gate.py ]; then
+            python -m telugu_speech.bench --asr-model telugu-asr-micro --sets fleurs-te --n 200
+            python scripts/check_bench_gate.py --baseline bench/results/telugu-asr-micro/baseline.json --max-wer-regression 0.02
+          else
+            echo "Bench gate script not present yet — run the bench by hand and paste the result into the PR (see docs/benchmark_results.md)."
+          fi

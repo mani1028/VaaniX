@@ -27,7 +27,8 @@ router = APIRouter(prefix="/api/v1", tags=["stt"])
 
 def _auth_http(request: Request, authorization: str | None) -> None:
     try:
-        authorize(request.app.state.settings, authorization)
+        host = request.client.host if request.client else None
+        authorize(request.app.state.settings, authorization, host)
     except PermissionError as exc:
         code = str(exc)
         status = 503 if code == "api_keys_not_configured" else 401
@@ -91,7 +92,8 @@ async def stt_stream(websocket: WebSocket) -> None:
     await websocket.accept()
     settings = websocket.app.state.settings
     try:
-        authorize(settings, websocket.headers.get("authorization"))
+        host = websocket.client.host if websocket.client else None
+        authorize(settings, websocket.headers.get("authorization"), host)
     except PermissionError as exc:
         await websocket.send_json({"code": str(exc), "message": "Authentication failed.", "streaming": False})
         await websocket.close(code=1008)

@@ -33,7 +33,8 @@ _WAV_LOCK = threading.Lock()
 
 def _checked_voice(body: TtsRequest, request: Request, authorization: str | None):
     try:
-        authorize(request.app.state.settings, authorization)
+        host = request.client.host if request.client else None
+        authorize(request.app.state.settings, authorization, host)
     except PermissionError as exc:
         code = str(exc)
         status = 503 if code == "api_keys_not_configured" else 401
@@ -161,7 +162,8 @@ def generated_audio(
 ) -> FileResponse:
     settings = request.app.state.settings
     try:
-        authorize(settings, authorization)
+        host = request.client.host if request.client else None
+        authorize(settings, authorization, host)
     except PermissionError as exc:
         code = str(exc)
         status = 503 if code == "api_keys_not_configured" else 401
@@ -267,7 +269,8 @@ def preview_voice(
 ) -> TtsResponse:
     settings = request.app.state.settings
     try:
-        authorize(settings, authorization)
+        host = request.client.host if request.client else None
+        authorize(settings, authorization, host)
     except PermissionError as exc:
         code = str(exc)
         status = 503 if code == "api_keys_not_configured" else 401
@@ -292,7 +295,8 @@ async def custom_voice(
 ) -> dict[str, object]:
     settings = request.app.state.settings
     try:
-        authorize(settings, authorization)
+        host = request.client.host if request.client else None
+        authorize(settings, authorization, host)
     except PermissionError as exc:
         code = str(exc)
         status = 503 if code == "api_keys_not_configured" else 401

@@ -260,6 +260,21 @@ def _replace_time(match: re.Match[str]) -> str:
     return _with_suffix(match, " ".join(parts) or "సున్నా గంటలు")
 
 
+# Short tokens the Hima voice glues onto the previous word. A longer
+# spelling keeps the same meaning and gives the voice a vowel to hold.
+_STEADY_WORDS = {"టీ": "టియీ"}
+
+
+def _steady_short_words(text: str) -> str:
+    pieces: list[str] = []
+    for word in text.split(" "):
+        core = word.strip(".,!?;:\"'")
+        if core in _STEADY_WORDS:
+            word = word.replace(core, _STEADY_WORDS[core], 1)
+        pieces.append(word)
+    return " ".join(pieces)
+
+
 def prepare_tts_text(text: str) -> str:
     """Read numbers, money, dates, times, and ordinals as Telugu words. Latin words stay Latin."""
     spoken = telugu_digits_to_ascii(to_nfc(text))
@@ -290,6 +305,7 @@ def prepare_tts_text(text: str) -> str:
     spoken = _DECIMAL.sub(lambda match: _with_suffix(match, _speak_decimal(match.group(1), match.group(2))), spoken)
     spoken = _SIGNED.sub(lambda match: _with_suffix(match, f"మైనస్ {speak_integer(int(match.group(1)))}"), spoken)
     spoken = _PLAIN_INTEGER.sub(lambda match: _with_suffix(match, speak_integer(int(match.group(0)))), spoken)
+    spoken = _steady_short_words(spoken)
     return re.sub(r"\s+", " ", spoken).strip()
 
 

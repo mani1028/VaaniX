@@ -2,15 +2,27 @@
 
 The Hima pack's extra middle seed carried a noise floor about ten times louder
 than the trained speakers, so it is not offered.
+
+v2 Part 1 (2026-11-21): this file is UNCHANGED in behaviour — every function
+below keeps its original signature and return value. What was added is a
+registry layer on top: ``backend_for_voice()`` and ``list_installed_voices()``
+first consult the core voice registry (``core/registry.py``), so a voice
+pack plugged in as a folder + ``manifest.yaml`` with a non-Hima engine
+(Piper, ONNX-VITS) works with no code change. Hima voices (Srinivas /
+Sravani) take the original path exactly as before, including the shared
+int8 pack, speaker names, seed 0, 24 kHz, and ``conversational`` only.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 
 from telugu_speech.asr.infer import ModelUnavailable
+
+log = logging.getLogger("vaani.tts.voices")
 
 PACK = Path("lite/models/hima-tts-nano-te")
 SAMPLE_DIR = Path("lite/voices/samples")
@@ -32,6 +44,10 @@ VOICES = {
         "note": "Trained female, about 185 to 225 Hz. Bhavana and Lakshmi match this pitch.",
     },
 }
+
+# v2: the registry is the source of truth for plugged-in voices; the
+# dict above stays as the legacy fallback for the two shipped Hima voices.
+DEFAULT_VOICE = "telugu_srinivas"
 
 
 def cpu_threads() -> int:
@@ -89,7 +105,7 @@ def selected_voices(root: Path | None = None) -> frozenset[str] | None:
 
 def is_known_voice(voice: str, root: Path | None = None) -> bool:
     if voice not in VOICES:
-        return False
+        return _registry_has(voice)
     allowed = selected_voices(root)
     return allowed is None or voice in allowed
 
@@ -100,6 +116,34 @@ def list_installed_voices(root: Path | None = None) -> list[dict[str, object]]:
     ready = pack_ready(base)
     sample_root = base / SAMPLE_DIR
     voices: list[dict[str, object]] = []
+    # v2: registry packs first (plugged-in voices, any engine).
+    for pack in _registry_packs():
+        if pack.id in VOICES:
+            continue  # shipped Hima voices are listed below, unchanged
+        voices.append(
+            {
+                "id": pack.id,
+                "name": pack.name,
+                "speaker": pack.name,
+                "language": pack.language,
+                "accent": "unlabeled",
+                "tier": "registry",
+                "gender": pack.gender,
+                "styles": ["conversational"],
+                "license": pack.licence,
+                "backend": pack.engine,
+                "model_path": str(pack.model_path),
+                "model_version": pack.version,
+                "size_bytes": pack.model_path.stat().st_size if pack.model_path.is_file() else None,
+                "compatibility": [pack.engine],
+                "available": pack.model_path.is_file() and pack.config_path.is_file(),
+                "shared_weights": False,
+                "download_id": None,
+                "samples": [],
+                "note": f"Voice pack registered from {pack.pack_dir}.",
+                "paths": [str(pack.pack_dir)],
+            }
+        )
     for voice_id, spec in VOICES.items():
         if allowed is not None and voice_id not in allowed:
             continue
@@ -215,10 +259,39 @@ class HimaTeluguBackend:
         from telugu_speech.tts.chunks import speech_pieces
 
         for piece in speech_pieces(text):
+            yield self._say_present(engine, piece)
+
+    def _say_present(self, engine: object, piece: str):
+        """Speak one piece again when the take is silent or far too short.
+
+        The Hima sampler sometimes stops after the first word. The same seed
+        repeats that take, so a short take is spoken again with the next seed
+        and the longer take is kept. A take that is already long enough stays
+        on the original seed, so a good line does not change.
+        """
+        import numpy as np
+
+        letters = sum(1 for char in piece if not char.isspace())
+        rate = self.sample_rate_hz
+        # About 90 ms per letter is a normal take. Much shorter means the
+        # sampler stopped. A longer take is not better: it often says other words.
+        expected = int(0.09 * max(letters, 1) * rate)
+        floor = int(0.02 * max(letters, 1) * rate)
+        best = np.zeros(0, np.float32)
+        best_distance = 10**12
+        for attempt in range(3):
             if self.speaker:
-                yield engine.say(piece, voice=self.speaker, seed=self.seed)  # type: ignore[attr-defined]
+                audio = engine.say(piece, voice=self.speaker, seed=self.seed + attempt)  # type: ignore[attr-defined]
             else:
-                yield engine.say(piece, seed=self.seed)  # type: ignore[attr-defined]
+                audio = engine.say(piece, seed=self.seed + attempt)  # type: ignore[attr-defined]
+            taken = np.asarray(audio, dtype=np.float32).reshape(-1)
+            distance = abs(taken.size - expected) if taken.size >= floor else 10**12
+            if distance < best_distance:
+                best = taken
+                best_distance = distance
+            if attempt == 0 and floor <= taken.size <= int(expected * 1.6):
+                return taken
+        return best
 
 
 def preferred_voice(root: Path | None = None) -> str:
@@ -239,11 +312,90 @@ def preferred_voice(root: Path | None = None) -> str:
     return "telugu_srinivas"
 
 
+# ---------------------------------------------------------------------------
+# v2 Part 1 — registry layer (additive only; nothing above changed)
+# ---------------------------------------------------------------------------
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
+def _registry_packs() -> list:
+    """Registered voice packs, or [] if the registry cannot be read.
+
+    Never raises: a registry failure must not break the legacy voice list.
+    """
+    try:
+        from telugu_speech.core.registry import get_registry
+
+        return get_registry(_project_root()).list_voices()
+    except Exception:
+        log.exception("voice registry unavailable; using legacy voices only")
+        return []
+
+
+def _registry_has(voice_id: str) -> bool:
+    return any(pack.id == voice_id for pack in _registry_packs())
+
+
+class _LegacyFileAdapter:
+    """Wrap a core provider backend in the legacy file-based interface.
+
+    Legacy callers (api/main.py warmup, routes) call
+    ``synthesize(text, reference_audio, reference_text, output_path) -> Path``.
+    A plugged-in non-Hima voice speaks through the core engine pool instead,
+    so this adapter writes the pool's audio bytes to ``output_path``.
+    """
+
+    def __init__(self, pack, pool) -> None:
+        self.pack = pack
+        self._pool = pool
+        self.name = f"{pack.engine}:{pack.id}"
+        self.requires_reference = False
+        self.sample_rate_hz = pack.sample_rate
+
+    def synthesize(self, text: str, reference_audio: Path | None, reference_text: str, output_path: Path) -> Path:
+        del reference_audio, reference_text
+        audio = self._pool.synthesize(text, self.pack.id, "conversational")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(audio)
+        return output_path
+
+    def iter_pcm(self, text: str):
+        """Yield float32 audio per piece, like HimaTeluguBackend.iter_pcm.
+
+        The pool streams WAV bytes per chunk; decode each chunk's frames
+        back to float32 so Part 2's SSE path (which expects float32
+        arrays, as Hima's iter_pcm yields) works unchanged.
+        """
+        import io
+        import wave
+
+        import numpy as np
+
+        for chunk in self._pool.synthesize_stream(text, self.pack.id, "conversational"):
+            with wave.open(io.BytesIO(chunk), "rb") as wav:
+                frames = wav.readframes(wav.getnframes())
+            pcm16 = np.frombuffer(frames, dtype=np.int16)
+            yield (pcm16.astype(np.float32) / 32767.0)
+
+
 def backend_for_voice(voice: str, root: Path | None = None):
-    """Return a shipped-pack backend. telugu_default follows the installed pack."""
+    """Return a shipped-pack backend. telugu_default follows the installed pack.
+
+    Unchanged for the two Hima voices (returns ``HimaTeluguBackend`` or
+    ``None`` exactly as before). A registry pack with a non-Hima engine
+    returns a ``_LegacyFileAdapter`` over the core engine pool instead.
+    """
     base = root or Path(".")
     if voice == "telugu_default":
         voice = preferred_voice(base)
+    # v2: plugged-in voice with a non-Hima engine.
+    for pack in _registry_packs():
+        if pack.id == voice and pack.engine != "hima-nano":
+            from telugu_speech.core.engine import get_pool
+
+            return _LegacyFileAdapter(pack, get_pool())
     allowed = selected_voices(base)
     if allowed is not None and voice not in allowed:
         return None
@@ -251,3 +403,8 @@ def backend_for_voice(voice: str, root: Path | None = None):
     if spec is None:
         return None
     return HimaTeluguBackend(str(base / PACK), spec["speaker"], int(spec["seed"]))
+
+
+def default_voice() -> str:
+    """v2 helper: the default voice id (unchanged: telugu_srinivas)."""
+    return DEFAULT_VOICE

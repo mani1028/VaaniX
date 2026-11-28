@@ -44,7 +44,9 @@ def test_dashboard_is_served() -> None:
     client = TestClient(app)
     page = client.get("/")
     assert page.status_code == 200
-    assert "Telugu Speech Engine" in page.text
+    # Branding is Vaani X since v2.1 Part C - "Telugu Speech Engine" no longer appears.
+    assert "Vaani X" in page.text
+    assert "Telugu Voice API" in page.text
     assert "telugu-speech" in page.text
     assert 'pip install -e ".[host]"' in page.text
     assert "lite/models/hima-tts-nano-te" in page.text

@@ -37,6 +37,7 @@ def test_complete_telugu_reads_amounts_dates_and_times() -> None:
         "ఒక రూపాయి యాభై పైసలు, మూడు పాయింట్ ఐదు శాతం మరియు మొదటి బహుమతి. free coffee."
     )
     assert prepare_tts_text("1,25,000 మంది") == "లక్ష ఇరవై ఐదు వేలు మంది"
+    assert prepare_tts_text("ఒక కప్పు టీ ఇవ్వండి") == "ఒక కప్పు టియీ ఇవ్వండి"
 
 
 def test_code_mix_is_tagged_not_transliterated() -> None:

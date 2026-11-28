@@ -26,7 +26,8 @@ async def detect(
 ) -> dict[str, object]:
     settings = request.app.state.settings
     try:
-        authorize(settings, authorization)
+        host = request.client.host if request.client else None
+        authorize(settings, authorization, host)
     except PermissionError as exc:
         code = str(exc)
         status = 503 if code == "api_keys_not_configured" else 401

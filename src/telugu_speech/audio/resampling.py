@@ -50,7 +50,8 @@ def tighten_pauses(audio: np.ndarray, sample_rate: int, max_pause_s: float = 0.1
     windows = np.lib.stride_tricks.sliding_window_view(audio, frame)[::hop]
     rms = np.sqrt(np.mean(windows.astype(np.float64) * windows, axis=1))
     silent = np.zeros(audio.size, dtype=bool)
-    starts = np.flatnonzero(rms < 0.008) * hop
+    # Only near-silence counts. 0.008 treated soft consonants as a gap and cut them.
+    starts = np.flatnonzero(rms < 0.0015) * hop
     if starts.size:
         silent[(starts[:, None] + np.arange(frame)).ravel()] = True
     max_keep = int(max_pause_s * sample_rate)

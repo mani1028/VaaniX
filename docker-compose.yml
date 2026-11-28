@@ -1,0 +1,72 @@
+# Vaani X 0.2.0 — local / Tiny VPS deployment (CPU only).
+#
+# Start:
+#   printf 'TELUGU_API_KEYS=choose-a-long-random-key\n' > .env
+#   docker compose up --build -d
+#   curl http://127.0.0.1:8000/api/v1/health
+#
+# Weights are NOT in the image. They come from the host folders mounted
+# below (./models and ./lite, read-only). If the host folders are empty,
+# remove those two volume lines and let the entrypoint link models from
+# the vaani-cache volume instead (see docs/DEPLOYMENT_TIERS.md).
+#
+# Tiny VPS default: TELUGU_SPEECH_SLOTS=2. One ASR model + one voice pack
+# share the box; a third overlapping speech call waits instead of loading
+# a third engine. See docs/DEPLOYMENT_TIERS.md before raising slots.
+#
+# The vaani-gpu service (profile "gpu") is documented only: its image
+# vaani-x:0.2.0-gpu is NOT built by this repo yet. Do not enable the
+# profile until that image exists.
+
+services:
+  vaani:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vaani-x:0.2.0-slim
+    container_name: vaani-x
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      TELUGU_SPEECH_AUTH: required
+      TELUGU_API_KEYS: ${TELUGU_API_KEYS:?Set TELUGU_API_KEYS in .env before starting}
+      TELUGU_HOST: 0.0.0.0
+      TELUGU_PORT: 8000
+      TELUGU_SPEECH_SLOTS: ${TELUGU_SPEECH_SLOTS:-2}
+      TELUGU_CPU_THREADS: ${TELUGU_CPU_THREADS:-2}
+      TELUGU_LIMIT_CONCURRENCY: ${TELUGU_LIMIT_CONCURRENCY:-256}
+      VAANI_OFFLINE: ${VAANI_OFFLINE:-0}
+      VAANI_AUTO_FETCH: ${VAANI_AUTO_FETCH:-0}
+      BHASHA_ENABLE_PLATFORM: "0"
+    volumes:
+      - vaani-cache:/home/vaani/.cache/vaani
+      - ./models:/app/models:ro
+      - ./lite:/app/lite:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  # GPU tier (opt-in, NOT built here yet). Enable only after a :gpu image
+  # exists; until then `docker compose --profile gpu up` will fail to pull.
+  vaani-gpu:
+    profiles: ["gpu"]
+    image: vaani-x:0.2.0-gpu
+    container_name: vaani-x-gpu
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      TELUGU_SPEECH_AUTH: required
+      TELUGU_API_KEYS: ${TELUGU_API_KEYS:?Set TELUGU_API_KEYS in .env before starting}
+      TELUGU_SPEECH_SLOTS: ${TELUGU_SPEECH_SLOTS:-4}
+      BHASHA_ENABLE_PLATFORM: "0"
+    volumes:
+      - vaani-cache:/home/vaani/.cache/vaani
+      - ./models:/app/models:ro
+      - ./lite:/app/lite:ro
+
+volumes:
+  vaani-cache:

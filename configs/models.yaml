@@ -1,0 +1,130 @@
+# Vaani X model catalogue — ASR upgrade path.
+#
+# Every WER below is tied to its named test set; do NOT compare rows as if
+# they were the same set. "expected_wer" is the published figure for that
+# set, not a promise for Vaani X audio. A model is only "recommended"
+# after it is measured by this repo's bench (docs/benchmark_results.md).
+# "sha256" / "revision" marked TBD must be filled from a real download
+# before the model is quoted anywhere. Nothing here downloads anything;
+# run scripts/fetch_models.py to fetch.
+#
+# Measured in this repo (20 Nov 2026, 10 clean FLEURS te_in clips):
+#   tiny int8 (telugu-asr-micro):  WER 0.4379 / CER 0.2760 / RTF 0.1095
+#   live recogniser (same tiny):   WER 0.2899 / CER 0.0811 / RTF 0.18
+#   small int8 (telugu-asr):       WER 0.3669 / CER 0.2451 / RTF 0.7738
+# Targets (NOT results): WER <= 20% / CER <= 5% / AER <= 15% on
+# FLEURS-te + Kathbath-te, n >= 200/set, speaker-disjoint.
+
+default_asr_model: telugu-asr-micro
+
+models:
+  - id: telugu-asr-micro
+    kind: asr
+    backend: faster_whisper
+    repo: local
+    local_path: models/telugu-asr-micro
+    size_mb: 42
+    ram_mb: ~360
+    licence: Apache-2.0
+    status: installed
+    revision: TBD
+    sha256: TBD
+    expected_wer:
+      test_set: FLEURS te_in, 10 clean clips, 20 Nov 2026 (this repo)
+      wer: 0.4379
+      cer: 0.2760
+    notes: Current default. Tiny int8, CPU, language locked to te.
+
+  - id: telugu-asr-small
+    kind: asr
+    backend: faster_whisper
+    repo: local
+    local_path: models/telugu-asr
+    size_mb: 241
+    ram_mb: ~956
+    licence: Apache-2.0
+    status: installed-if-present
+    revision: TBD
+    sha256: TBD
+    expected_wer:
+      test_set: FLEURS te_in, 10 clean clips, 20 Nov 2026 (this repo)
+      wer: 0.3669
+      cer: 0.2451
+    notes: Same family, larger. Present in some checkouts only; bench skips it when absent.
+
+  - id: vasista22-whisper-telugu-base
+    kind: asr
+    backend: faster_whisper
+    repo: vasista22/whisper-telugu-base
+    revision: TBD
+    sha256: TBD
+    params_m: 74
+    size_mb: 290
+    ram_mb: ~1000
+    licence: Apache-2.0
+    status: download-required
+    expected_wer:
+      test_set: FLEURS (Shruti vendor table, Nov 2026, n=200/set)
+      wer: 0.289
+      cer: TBD
+    notes: 1 GB tier. IIT-Madras fine-tune; vanilla Whisper collapses on Telugu, this does not.
+
+  - id: vasista22-whisper-telugu-small
+    kind: asr
+    backend: faster_whisper
+    repo: vasista22/whisper-telugu-small
+    revision: TBD
+    sha256: TBD
+    params_m: 244
+    size_mb: 488  # INT8 (faster-whisper); FP32 file is ~922 MiB
+    ram_mb: ~1000-2000
+    licence: Apache-2.0
+    status: download-required
+    expected_wer:
+      test_set: FLEURS 24.0% / Kathbath 26.0% (Shruti vendor table, Nov 2026, n=200/set)
+      wer: 0.24
+      cer: TBD
+    notes: RECOMMENDED UPGRADE. Biggest accuracy-per-MB step from the tiny default.
+      Run the bench on the same frozen sets before switching the default.
+
+  - id: indicconformer-120m-te-int8
+    kind: asr
+    backend: sherpa-onnx
+    repo: TBD
+    repo_note: community sherpa-onnx conversion of ai4bharat IndicConformer 120M monolingual te — no HF repo id confirmed yet
+    revision: TBD
+    sha256: TBD
+    size_mb: 150
+    ram_mb: ~500
+    licence: MIT
+    status: validate-first
+    expected_wer:
+      test_set: TBD — no isolated Telugu WER found in Nov 2026 research
+      wer: TBD
+      cer: TBD
+    notes: Smallest candidate that might match the 600M on Telugu alone.
+      Do NOT ship until this repo's bench measures it on FLEURS-te + Kathbath-te.
+
+  - id: indicconformer-600m-int8
+    kind: asr
+    backend: sherpa-onnx
+    repo: Docglasses-AI/indic-conformer-600m-sherpa-onnx-int8
+    revision: TBD
+    sha256: TBD
+    size_mb: 659
+    ram_mb: ~1290
+    licence: MIT
+    status: download-required
+    expected_wer:
+      test_set: IndicVoices Telugu, AI4Bharat paper
+      wer: 0.148
+      cer: TBD
+    notes: 4 GB tier only. CTC branch is a single ONNX graph; fastest on CPU.
+      Needs the gated HF download; sherpa-onnx is the runtime, not NeMo.
+
+# Models deliberately NOT in this catalogue (see docs/ACCURACY.md):
+#   vanilla Whisper (any size) for Telugu — script collapse, Large-v3
+#     96-105% WER on IndicVoices/medical in the Eka benchmark.
+#   Vosk-te — 87.9% WER on FLEURS; cheap and wrong.
+#   Meta MMS ASR — CC-BY-NC-4.0, non-commercial.
+#   NVIDIA NeMo Parakeet — no Telugu.

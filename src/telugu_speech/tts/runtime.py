@@ -30,12 +30,12 @@ class _Pool:
 
 
 def speech_slots() -> int:
-    raw = os.environ.get("TELUGU_SPEECH_SLOTS", "8")
+    raw = os.environ.get("TELUGU_SPEECH_SLOTS", "2")
     try:
         slots = int(raw)
     except ValueError:
-        return 8
-    return min(16, max(1, slots))
+        return 2
+    return min(4, max(1, slots))
 
 
 def shared_engine(key: tuple[object, ...], loader: Callable[[], object]) -> object:

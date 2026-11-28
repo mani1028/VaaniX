@@ -1,0 +1,20 @@
+# Weights, data, and local state are never baked into the image.
+.git
+__pycache__
+*.pyc
+.venv*
+venv*
+.venv311
+data/
+experiments/
+bench/
+models/
+lite/models/
+*.wav
+.env
+.env.*
+dist/
+build/
+*.egg-info
+.pytest_cache
+.DS_Store

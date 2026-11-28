@@ -48,6 +48,47 @@ On the frozen local bench, after it exists:
 
 A "better than Sarvam" statement requires Saaras scored with this normalizer on the same clips.
 
+## Harness (0.2.0) — how a number becomes quotable
+
+```bash
+.venv311/bin/python -m telugu_speech.bench --asr-model telugu-asr-micro --sets fleurs-te kathbath-te cv-te --n 200
+```
+
+- **Frozen sets, speaker-disjoint.** Each set is a manifest at `data/benchmarks/<set>/manifest.jsonl` (FLEURS-te, Kathbath-te, Common Voice te). The test split must not share speakers with train; pass `--train-manifest` to check. Datasets are NOT in this repo — the command exits 2 and names the exact manifest path when one is missing. No data is invented.
+- **Minimum size.** n ≥ 200 clips per set from ≥ 20 speakers. The ten-clip rows above do not meet it and stay labelled as what they are. `--allow-small` is a smoke-test escape only.
+- **Three metrics, always together.** WER + CER + AER (akshara error rate). Telugu is agglutinative — case, plural, and postpositions fuse into one long word, so one wrong matra voids the whole word and WER runs roughly 3–4x the akshara error rate on the same transcript. Report all three, raw and normalized (digit policy `spoken`, punctuation stripped for scoring). Numbers and Latin code-mix words are scored separately (numeral WER, Latin WER) because a model can be good at Telugu words and still drop every English word — the Andhra check recalled 0 of 53 marked English words.
+- **RTF + peak RAM + model revision SHA** are recorded with every run. A result without a revision is not reproducible; omit the SHA only when it is genuinely unknown, and say so.
+- **Output.** JSON goes to `bench/results/<model>/<date>.json` (plus a Markdown report beside it). Results are never hand-edited; re-run the bench to change a number.
+- **TTS intelligibility (opt-in).** `--tts-voice telugu_srinivas --tts-sentences <file>` synthesizes each sentence, transcribes it back with the ASR model, and scores the round trip. Without those flags the TTS section is `not_measured`. No MOS claim exists until native listeners fill `configs/mos_listeners.csv`.
+- **Cross-check.** `--crosscheck-jiwer` (needs `pip install -e ".[bench]"`) recomputes WER with jiwer on the same clips; a mismatch with the repo's WER means a normalizer bug.
+
+## v1.0 targets (targets, NOT results)
+
+| Metric | Target (clean read speech) | Stretch (conversational / code-mixed) |
+| --- | --- | --- |
+| ASR WER (FLEURS-te + Kathbath-te, n ≥ 200/set) | ≤ 20% | ≤ 35% |
+| ASR CER | ≤ 5% | ≤ 8% |
+| ASR AER | ≤ 15% | report only |
+| TTS intelligibility (synthesized → ASR back-transcription) | WER ≤ 15%, CER ≤ 6% | — |
+| ASR RTF (2 vCPU) | ≤ 0.5 | — |
+| TTS RTF (2 vCPU) | ≤ 0.5 | — |
+
+Current measured position for comparison: live decoder WER 0.2899 / CER 0.0811 on 10 clean clips (20 Nov 2026). Every target above is still **TBD** until a frozen-set run measures it.
+
+## CI gate (documented, not yet wired)
+
+Add this when CI is enabled — do not claim CI exists until Mani enables it. Any model swap that worsens Telugu WER by more than 2 points absolute on FLEURS-te fails the PR:
+
+```yaml
+# .github/workflows/bench-gate.yml (proposed, not yet added)
+- name: Benchmark gate
+  run: |
+    .venv311/bin/python -m telugu_speech.bench --asr-model telugu-asr-micro --sets fleurs-te --n 200
+    .venv311/bin/python scripts/check_bench_gate.py --baseline bench/results/telugu-asr-micro/baseline.json --max-wer-regression 0.02
+```
+
+`scripts/check_bench_gate.py` does not exist yet — it is part of the gate work, not assumed here.
+
 ## Detection and Sarvam rows (not scores)
 
 The 10 FLEURS rows have no `lid_label` and no non-Telugu negatives. Detection macro F1 is **not evaluable**. `scripts/test_sarvam.py` prints `not measured` for Saaras v4 `transcribe` and `codemix` when `SARVAM_API_KEY` is unset and does not send audio. IndicConformer remains **not measured** until NeMo and the gated checkpoint are installed. No row in this file claims parity with Saaras or Bulbul.
